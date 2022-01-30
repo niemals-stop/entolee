@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "tenantId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "name": {
+      "type": "string"
+    },
+    "companyId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "companyName": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "tenantId",
+    "name",
+    "companyId",
+    "companyName"
+  ]
+}
