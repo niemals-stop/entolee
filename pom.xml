@@ -53,11 +53,11 @@
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
 
@@ -154,7 +154,7 @@
                     <preparationGoals>clean install</preparationGoals>
 <!--                    <arguments>-Dmaven.javadoc.skip=true -Dskip.tests=${skip.tests}</arguments>-->
                     <goals>deploy</goals>
-                    <releaseProfiles>release,entolee-publishing</releaseProfiles>
+                    <releaseProfiles>release</releaseProfiles>
                     <goals>deploy</goals>
                     <localCheckout>true</localCheckout>
                     <pushChanges>true</pushChanges>
