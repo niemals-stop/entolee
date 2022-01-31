@@ -141,8 +141,8 @@
                 <version>1.6.8</version>
                 <extensions>true</extensions>
                 <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <serverId>ossrh-entolee</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
@@ -152,7 +152,7 @@
                 <version>3.0.0-M1</version>
                 <configuration>
                     <preparationGoals>clean install</preparationGoals>
-                    <arguments>-Dmaven.javadoc.skip=true -Dskip.tests=${skip.tests}</arguments>
+<!--                    <arguments>-Dmaven.javadoc.skip=true -Dskip.tests=${skip.tests}</arguments>-->
                     <goals>deploy</goals>
                     <localCheckout>true</localCheckout>
                     <pushChanges>true</pushChanges>
