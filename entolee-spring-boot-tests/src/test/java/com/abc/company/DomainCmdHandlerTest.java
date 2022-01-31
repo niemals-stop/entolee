@@ -1,10 +1,13 @@
 package com.abc.company;
 
 import com.abc.IntegrationsTest;
+import com.abc.commands.subscription.api.CompanyDeactivatedEvent;
 import com.abc.commands.subscription.api.CreateCompanyCmd;
+import com.abc.commands.subscription.api.DeactivateCompaniesCmd;
 import com.abc.commands.subscription.api.DeleteCompanyCmd;
 import com.abc.commands.subscription.api.TypeMismatchedCmd;
 import com.abc.commands.subscription.api.UpdateCompanyCmd;
+import com.abc.company.application.CompanyDeactivatedEventListener;
 import com.abc.company.application.CompanyRepository;
 import com.abc.company.model.Company;
 import com.abc.company.model.CompanyValidationException;
@@ -12,11 +15,15 @@ import com.abc.identifiy.model.UserAccount;
 import com.github.entolee.core.DomainSignalPublisher;
 import com.github.entolee.impl.TypeMismatchException;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @IntegrationsTest
 class DomainCmdHandlerTest {
@@ -30,6 +37,9 @@ class DomainCmdHandlerTest {
     @Autowired
     private CompanyRepository repository;
 
+    @Autowired
+    private CompanyDeactivatedEventListener companyDeactivatedEventListener;
+
     @Test
     void handlerForFactoryMethodWorks() {
         final UUID companyId = UUID.randomUUID();
@@ -37,7 +47,7 @@ class DomainCmdHandlerTest {
 
         publisher.fire(cmd, currentUser);
 
-        Assertions.assertThat(repository.findById(companyId))
+        assertThat(repository.findById(companyId))
             .isNotEmpty();
     }
 
@@ -45,14 +55,14 @@ class DomainCmdHandlerTest {
     void handlerForUpdateEntityMethodWorks() {
         final UUID companyId = UUID.randomUUID();
         publisher.fire(createCreateCompanyCmd(companyId), currentUser);
-        Assertions.assertThat(repository.findAll())
+        assertThat(repository.findAll())
             .extracting(Company::getId)
             .contains(companyId);
 
         final String newName = "New Name";
         publisher.fire(new UpdateCompanyCmd(companyId, tenantId, newName), currentUser);
 
-        Assertions.assertThat(repository.findById(companyId))
+        assertThat(repository.findById(companyId))
             .map(Company::getName)
             .hasValue(newName);
     }
@@ -62,16 +72,16 @@ class DomainCmdHandlerTest {
         final UUID companyId = UUID.randomUUID();
         final CreateCompanyCmd createCompanyCmd = createCreateCompanyCmd(companyId);
         publisher.fire(createCompanyCmd, currentUser);
-        Assertions.assertThat(repository.findAll())
+        assertThat(repository.findAll())
             .extracting(Company::getId)
             .contains(companyId);
 
         final String newName = "Ooops New Name";
-        Assertions.assertThatThrownBy(() -> publisher.fire(new UpdateCompanyCmd(companyId, tenantId, newName), currentUser))
+        assertThatThrownBy(() -> publisher.fire(new UpdateCompanyCmd(companyId, tenantId, newName), currentUser))
             .hasMessage("Wrong company name.")
             .isInstanceOf(CompanyValidationException.class);
 
-        Assertions.assertThat(repository.findById(companyId))
+        assertThat(repository.findById(companyId))
             .as("entity hasn't been updated.")
             .map(Company::getName)
             .hasValue(createCompanyCmd.getName());
@@ -83,7 +93,7 @@ class DomainCmdHandlerTest {
         final UUID company2Id = UUID.randomUUID();
         publisher.fire(createCreateCompanyCmd(company1Id), currentUser);
         publisher.fire(createCreateCompanyCmd(company2Id), currentUser);
-        Assertions.assertThat(repository.findAll())
+        assertThat(repository.findAll())
             .extracting(Company::getId)
             .contains(company1Id, company2Id);
 
@@ -93,7 +103,7 @@ class DomainCmdHandlerTest {
 
         publisher.fire(deleteCompanyCmd, currentUser);
 
-        Assertions.assertThat(repository.findAll())
+        assertThat(repository.findAll())
             .extracting(Company::getId)
             .contains(company2Id);
     }
@@ -104,9 +114,38 @@ class DomainCmdHandlerTest {
         final CreateCompanyCmd cmd = createCreateCompanyCmd(companyId);
         publisher.fire(cmd, currentUser);
 
-        Assertions.assertThatThrownBy(() -> publisher.fire(new TypeMismatchedCmd(1, false)))
+        assertThatThrownBy(() -> publisher.fire(new TypeMismatchedCmd(1, false)))
             .isInstanceOf(TypeMismatchException.class)
             .hasMessage("com.abc.commands.subscription.api.TypeMismatchedCmd#tenantId = Boolean, com.abc.company.model.Company#tenantId = UUID");
+    }
+
+    @Test
+    void springBeanIsAbleToHandleCommand() {
+        final UUID company1Id = UUID.randomUUID();
+        publisher.fire(createCreateCompanyCmd(company1Id), currentUser);
+
+        final UUID company2Id = UUID.randomUUID();
+        publisher.fire(createCreateCompanyCmd(company2Id), currentUser);
+
+        final List<UUID> companies = Arrays.asList(company1Id, company2Id);
+        assertThat(repository.findAllById(companies))
+            .extracting(Company::getId)
+            .containsExactlyInAnyOrder(company1Id, company2Id);
+
+        publisher.fire(new DeactivateCompaniesCmd(companies, tenantId), currentUser);
+        assertThat(repository.findActiveCompanies(tenantId))
+            .isEmpty();
+        assertThat(repository.findAllById(companies))
+            .extracting(Company::getId)
+            .containsExactlyInAnyOrder(company1Id, company2Id);
+
+        assertThat(companyDeactivatedEventListener.getEvents())
+            .extracting(CompanyDeactivatedEvent::getId)
+            .as("company deactivated event listener executed four times, because it has two event listeners.")
+            .containsExactly(
+                company1Id, company1Id,
+                company2Id, company2Id
+            );
     }
 
     private CreateCompanyCmd createCreateCompanyCmd(UUID companyId) {
