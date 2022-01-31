@@ -5,7 +5,7 @@
 
     <groupId>io.github.niemals-stop</groupId>
     <artifactId>entolee-spring-boot-sandbox</artifactId>
-    <version>0.1.19-SNAPSHOT</version>
+    <version>0.1.19</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>io.github.niemals-stop</groupId>
             <artifactId>entolee-spring-boot-starter</artifactId>
-            <version>0.4.2-SNAPSHOT</version>
+            <version>0.4.2</version>
         </dependency>
 
         <dependency>
