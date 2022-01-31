@@ -2,12 +2,10 @@ package com.abc.department.model;
 
 import com.abc.commands.subscription.api.CompanyUpdatedEvent;
 import com.abc.commands.subscription.api.CreateDepartmentCmd;
-import com.abc.company.TenantResource;
 import com.abc.identifiy.model.UserAccount;
 import com.github.entolee.annotations.DomainCmdHandler;
 import com.github.entolee.annotations.DomainEventHandler;
 import lombok.Getter;
-import org.springframework.data.domain.AbstractAggregateRoot;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -26,7 +24,7 @@ import java.util.UUID;
         name = "Target.Department.CompanyUpdatedEvent",
         query = "select d from Department as d where d.companyId=:id and d.tenantId =:tenantId"),
 })
-public class Department extends AbstractAggregateRoot<Department> implements TenantResource {
+public class Department {
 
     @Id
     private UUID id;
@@ -44,29 +42,14 @@ public class Department extends AbstractAggregateRoot<Department> implements Ten
     private String companyName;
 
     @DomainCmdHandler(CreateDepartmentCmd.class)
-    public static void create(final CreateDepartmentCmd cmd, final EntityManager em) {
+    public static void create(final CreateDepartmentCmd cmd, final EntityManager entityManager) {
         final Department department = new Department();
         department.id = cmd.getId();
         department.tenantId = cmd.getTenantId();
         department.companyId = cmd.getCompanyId();
         department.companyName = cmd.getCompanyName();
         department.name = cmd.getName();
-        em.persist(department);
-    }
-
-    @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public UUID getTenantId() {
-        return tenantId;
-    }
-
-    @Override
-    public String getName() {
-        return name;
+        entityManager.persist(department);
     }
 
     @DomainEventHandler(CompanyUpdatedEvent.class)

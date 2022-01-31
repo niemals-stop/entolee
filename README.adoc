@@ -1,5 +1,4 @@
 == Overview
 Entolee - domain signals for your application.
 
-== Movitation
 == Usage

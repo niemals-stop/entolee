@@ -8,17 +8,16 @@ import com.abc.commands.subscription.api.CreateCompanyCmd;
 import com.abc.commands.subscription.api.DeleteCompanyCmd;
 import com.abc.commands.subscription.api.TypeMismatchedCmd;
 import com.abc.commands.subscription.api.UpdateCompanyCmd;
-import com.abc.company.TenantResource;
-import com.abc.company.application.CompanyRepository;
 import com.abc.identifiy.model.UserAccount;
 import com.github.entolee.annotations.DomainCmdHandler;
 import com.github.entolee.core.DomainSignalPublisher;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.AbstractAggregateRoot;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EntityManager;
 import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
@@ -35,7 +34,8 @@ import java.util.UUID;
         query = "select c from Company as c where c.id=:id and c.tenantId =:tenantId")
 })
 @Table(name = "company")
-public class Company extends AbstractAggregateRoot<Company> implements TenantResource {
+@Getter
+public class Company {
 
     private static final Logger LOG = LoggerFactory.getLogger(Company.class);
 
@@ -50,24 +50,23 @@ public class Company extends AbstractAggregateRoot<Company> implements TenantRes
 
     @DomainCmdHandler(CreateCompanyCmd.class)
     public static void create(final CreateCompanyCmd cmd,
-                              final CompanyRepository repository,
+                              final EntityManager em,
                               final DomainSignalPublisher publisher,
                               final UserAccount account) {
         final Company company = new Company();
         company.id = cmd.getId();
         company.tenantId = cmd.getTenantId();
         company.name = cmd.getName();
-        final CompanyCreatedEvent event = new CompanyCreatedEvent(
+
+        em.persist(company);
+        LOG.info("Company.created");
+
+        publisher.fire(new CompanyCreatedEvent(
             company.id,
             company.tenantId,
             company.name,
             account.getId()
-        );
-        company.registerEvent(event);
-
-        repository.save(company);
-        LOG.info("Company.created");
-        publisher.fire(event, account);
+        ), account);
     }
 
     @DomainCmdHandler(CausingNPEEvent.class)
@@ -75,24 +74,9 @@ public class Company extends AbstractAggregateRoot<Company> implements TenantRes
         event.getTenantId().compareTo(Boolean.TRUE);
     }
 
-    @Override
-    public UUID getId() {
-        return id;
-    }
-
-    @Override
-    public UUID getTenantId() {
-        return tenantId;
-    }
-
-    @Override
-    public String getName() {
-        return name;
-    }
-
     @DomainCmdHandler(UpdateCompanyCmd.class)
     public void update(final UpdateCompanyCmd cmd,
-                       final CompanyRepository repository,
+                       final EntityManager entityManager,
                        final CompanyValidator validator,
                        final DomainSignalPublisher publisher,
                        final UserAccount account) {
@@ -100,21 +84,19 @@ public class Company extends AbstractAggregateRoot<Company> implements TenantRes
         this.name = cmd.getName();
         final CompanyUpdatedEvent event = new CompanyUpdatedEvent(id, tenantId, name, account.getId());
         publisher.fire(event, account);
-        registerEvent(event);
-        repository.save(this);
+        entityManager.merge(this);
         LOG.info("Company.updated");
     }
 
     @DomainCmdHandler(DeleteCompanyCmd.class)
     public void delete(final DeleteCompanyCmd cmd,
-                       final CompanyRepository repository,
+                       final EntityManager entityManager,
                        final DomainSignalPublisher publisher,
                        final UserAccount account) {
         LOG.info("Company.delete");
         final CompanyDeletedEvent signal = new CompanyDeletedEvent(id, tenantId, account.getId());
         publisher.fire(signal, account);
-        registerEvent(signal);
-        repository.delete(this);
+        entityManager.remove(this);
         LOG.info("Company.deleted");
     }
 

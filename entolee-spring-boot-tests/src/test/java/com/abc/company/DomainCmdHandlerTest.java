@@ -1,9 +1,6 @@
 package com.abc.company;
 
 import com.abc.IntegrationsTest;
-import com.abc.commands.subscription.api.CompanyCreatedEvent;
-import com.abc.commands.subscription.api.CompanyDeletedEvent;
-import com.abc.commands.subscription.api.CompanyUpdatedEvent;
 import com.abc.commands.subscription.api.CreateCompanyCmd;
 import com.abc.commands.subscription.api.DeleteCompanyCmd;
 import com.abc.commands.subscription.api.TypeMismatchedCmd;
@@ -16,7 +13,6 @@ import com.github.entolee.core.DomainSignalPublisher;
 import com.github.entolee.impl.TypeMismatchException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,17 +23,12 @@ class DomainCmdHandlerTest {
 
     private final UserAccount currentUser = new UserAccount(UUID.randomUUID(), "max");
     private final UUID tenantId = UUID.fromString("47f13d4c-c608-4502-9619-d62ee9e63c9b");
+
     @Autowired
     private DomainSignalPublisher publisher;
+
     @Autowired
     private CompanyRepository repository;
-    @Autowired
-    private RecordingAuditEventListener auditEventListener;
-
-    @BeforeEach
-    void setUp() {
-        auditEventListener.clear();
-    }
 
     @Test
     void handlerForFactoryMethodWorks() {
@@ -64,13 +55,6 @@ class DomainCmdHandlerTest {
         Assertions.assertThat(repository.findById(companyId))
             .map(Company::getName)
             .hasValue(newName);
-
-        Assertions.assertThat(auditEventListener.getRecordedEvents())
-            .extracting(e -> e.getClass().getSimpleName())
-            .containsExactly(
-                CompanyCreatedEvent.class.getSimpleName(),
-                CompanyUpdatedEvent.class.getSimpleName()
-            );
     }
 
     @Test
@@ -91,11 +75,6 @@ class DomainCmdHandlerTest {
             .as("entity hasn't been updated.")
             .map(Company::getName)
             .hasValue(createCompanyCmd.getName());
-
-        Assertions.assertThat(auditEventListener.getRecordedEvents())
-            .as("only create event record. update didn't succeed.")
-            .extracting(e -> e.getClass().getSimpleName())
-            .containsExactly(CompanyCreatedEvent.class.getSimpleName());
     }
 
     @Test
@@ -117,14 +96,6 @@ class DomainCmdHandlerTest {
         Assertions.assertThat(repository.findAll())
             .extracting(Company::getId)
             .contains(company2Id);
-
-        Assertions.assertThat(auditEventListener.getRecordedEvents())
-            .extracting(e -> e.getClass().getSimpleName())
-            .containsExactly(
-                CompanyCreatedEvent.class.getSimpleName(),
-                CompanyCreatedEvent.class.getSimpleName(),
-                CompanyDeletedEvent.class.getSimpleName()
-            );
     }
 
     @Test
