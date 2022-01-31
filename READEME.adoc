@@ -1,1 +1,0 @@
-== Entolee - domain signals for your application.
