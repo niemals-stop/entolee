@@ -3,6 +3,7 @@ package com.github.entolee.impl;
 import com.github.entolee.core.DomainSignalPublisher;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 class DomainSignalPublisherImpl implements DomainSignalPublisher {
 
@@ -27,8 +28,17 @@ class DomainSignalPublisherImpl implements DomainSignalPublisher {
 
     @Override
     public void fire(Object signal, final Object... args) {
-        final SignalHandlerInvocationAdapter adapter = handlers.find(signal.getClass())
-            .orElseGet(() -> missingSignalHandlerStrategy.get(signal.getClass()));
+        final List<SignalHandlerInvocationAdapter> adapters = handlers.find(signal.getClass());
+        if (adapters.isEmpty()) {
+            invoke(missingSignalHandlerStrategy.get(signal.getClass()), signal, args);
+        } else {
+            for (SignalHandlerInvocationAdapter adapter : adapters) {
+                invoke(adapter, signal, args);
+            }
+        }
+    }
+
+    private void invoke(SignalHandlerInvocationAdapter adapter, Object signal, Object[] args) {
         try {
             adapter.invoke(signal, args);
         } catch (InvocationTargetException e) {

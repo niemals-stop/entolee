@@ -2,9 +2,11 @@ package com.abc.company.model;
 
 import com.abc.commands.subscription.api.CausingNPEEvent;
 import com.abc.commands.subscription.api.CompanyCreatedEvent;
+import com.abc.commands.subscription.api.CompanyDeactivatedEvent;
 import com.abc.commands.subscription.api.CompanyDeletedEvent;
 import com.abc.commands.subscription.api.CompanyUpdatedEvent;
 import com.abc.commands.subscription.api.CreateCompanyCmd;
+import com.abc.commands.subscription.api.DeactivateCompanyCmd;
 import com.abc.commands.subscription.api.DeleteCompanyCmd;
 import com.abc.commands.subscription.api.TypeMismatchedCmd;
 import com.abc.commands.subscription.api.UpdateCompanyCmd;
@@ -18,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EntityManager;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.NamedQueries;
 import javax.persistence.NamedQuery;
@@ -48,6 +52,10 @@ public class Company {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
     @DomainCmdHandler(CreateCompanyCmd.class)
     public static void create(final CreateCompanyCmd cmd,
                               final EntityManager em,
@@ -57,6 +65,7 @@ public class Company {
         company.id = cmd.getId();
         company.tenantId = cmd.getTenantId();
         company.name = cmd.getName();
+        company.status = Status.ACTIVE;
 
         em.persist(company);
         LOG.info("Company.created");
@@ -88,9 +97,18 @@ public class Company {
         LOG.info("Company.updated");
     }
 
+    @DomainCmdHandler(DeactivateCompanyCmd.class)
+    public void deactivate(final EntityManager entityManager,
+                           final DomainSignalPublisher publisher,
+                           final UserAccount account) {
+        final CompanyDeactivatedEvent signal = new CompanyDeactivatedEvent(id, tenantId);
+        status = Status.INACTIVE;
+        entityManager.merge(this);
+        publisher.fire(signal, account);
+    }
+
     @DomainCmdHandler(DeleteCompanyCmd.class)
-    public void delete(final DeleteCompanyCmd cmd,
-                       final EntityManager entityManager,
+    public void delete(final EntityManager entityManager,
                        final DomainSignalPublisher publisher,
                        final UserAccount account) {
         LOG.info("Company.delete");
@@ -105,4 +123,7 @@ public class Company {
         throw new IllegalArgumentException("should never happen");
     }
 
+    public enum Status {
+        ACTIVE, INACTIVE
+    }
 }
