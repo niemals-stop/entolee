@@ -13,7 +13,7 @@
 
     <groupId>io.github.niemals-stop</groupId>
     <artifactId>entolee</artifactId>
-    <version>0.4.4</version>
+    <version>0.4.5-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -40,7 +40,7 @@
         <connection>scm:git:git@github.com:niemals-stop/entolee.git</connection>
         <developerConnection>scm:git:git@github.com:niemals-stop/entolee.git</developerConnection>
         <url>https://github.com/niemals-stop/entolee</url>
-      <tag>v0.4.4</tag>
+      <tag>v0.3.0</tag>
   </scm>
 
     <developers>
