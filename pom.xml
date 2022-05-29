@@ -19,7 +19,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <spring-boot.version>2.6.1</spring-boot.version>
+        <spring-boot.version>2.6.8</spring-boot.version>
         <version.maven-plugin-api>3.6.0</version.maven-plugin-api>
         <skip.tests>false</skip.tests>
     </properties>
